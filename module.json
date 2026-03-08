@@ -17,7 +17,8 @@
     "styles/terminal.css"
   ],
   "url":"https://github.com/codeVibe19/dnd-dock47b-terminal",
-  "manifest":"https://raw.githubusercontent.com/codeVibe19/dnd-dock47b-terminal/main/&module.json",
+  "manifest":"https://raw.githubusercontent.com/codeVibe19/dnd-dock47b-terminal/main/module.json",
   "download":"https://github.com/codeVibe19/dnd-dock47b-terminal/releases/download/v1/module.zip"
 }
+
 
