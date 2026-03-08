@@ -1,0 +1,204 @@
+<div class="dock47b-app">
+  <header class="dock47b-header">
+    <div class="dock47b-hleft">
+      <b>DOCK-47B // Fracht-Terminal</b>
+      <span>VAL-2 Canberra • Raumhafen Subnet • Session: TEMP-GUEST</span>
+    </div>
+    <div class="dock47b-hright">
+      <div class="dock47b-pill">ALARM: <strong>{{alarm}}</strong></div>
+      <div class="dock47b-pill">ZUGRIFF: <strong>{{access}}</strong></div>
+      <div class="dock47b-pill">STATUS: <strong class="dock47b-status dock47b-status-{{status}}">{{status}}</strong></div>
+    </div>
+  </header>
+
+  <main class="dock47b-main">
+    <section class="dock47b-nav">
+      <h3>NODES</h3>
+      <div class="dock47b-btns">
+        <button data-node="manifest">Manifest</button>
+        <button data-node="cams">Kameras</button>
+        <button data-node="logs">Audit-Logs</button>
+        <button class="danger" data-action="disconnect">Verbindung trennen</button>
+      </div>
+    </section>
+
+    <section class="dock47b-center">
+      <div class="dock47b-screen">
+        <div class="dock47b-title">
+          <b>
+            {{#if (eq node "terminal")}}Terminal{{/if}}
+            {{#if (eq node "manifest")}}Manifest{{/if}}
+            {{#if (eq node "cams")}}Kameras{{/if}}
+            {{#if (eq node "logs")}}Audit-Logs{{/if}}
+          </b>
+          <span>
+            {{#if (eq node "terminal")}}Start-Konsole / Gastzugang{{/if}}
+            {{#if (eq node "manifest")}}Frachtlisten / Container-IDs / Zielorte{{/if}}
+            {{#if (eq node "cams")}}Live-Feeds / Zeitstempel{{/if}}
+            {{#if (eq node "logs")}}Zugriffsspuren{{/if}}
+          </span>
+        </div>
+        <div class="dock47b-state">{{#if lockedOut}}GESPERRT{{else}}Bereit{{/if}}</div>
+      </div>
+
+      <div class="dock47b-content">
+
+        {{!-- TERMINAL --}}
+        {{#if (eq node "terminal")}}
+          <div class="mono">
+            <div><span class="hl">DOCK-47B TERMINAL</span></div>
+            <div class="muted">Subnet-Knoten aktiv. Verfügbare Nodes: Manifest, Kameras, Audit-Logs.</div>
+
+            {{#if (eq access "OPERATOR")}}
+              <div class="sp"></div>
+              <div class="good">Zugriffsstufe aktiv: OPERATOR</div>
+            {{/if}}
+
+            <div class="sp"></div>
+
+            {{#if showAuthUI}}
+              <div class="card">
+                <div><span class="hl">AUTH</span> <span class="muted">/ Zugang</span></div>
+                <div class="sp"></div>
+
+                <div class="row">
+                  <button data-auth-tab="login" class="{{#if (eq authMode "login")}}ok{{/if}}">Name/Passwort</button>
+                  <button data-auth-tab="override" class="{{#if (eq authMode "override")}}ok{{/if}}">Override</button>
+                </div>
+
+                <div class="divider"></div>
+
+                {{#if (eq authMode "login")}}
+                  <div class="muted">Benutzer:</div>
+                  <div class="sp"></div>
+                  <input id="login-user" placeholder="User-ID" />
+                  <div class="sp"></div>
+                  <div class="muted">Passwort:</div>
+                  <div class="sp"></div>
+                  <input id="login-pass" type="password" placeholder="••••••••" />
+                  <div class="sp"></div>
+                  <button data-action="do-login">Login</button>
+                {{/if}}
+
+                {{#if (eq authMode "override")}}
+                  <div class="muted">Override-Key:</div>
+                  <div class="sp"></div>
+                  <input id="ov-key" placeholder="47B-xxxx-xxxxx" />
+                  <div class="sp"></div>
+                  <button class="ok" data-action="do-override">Override senden</button>
+                {{/if}}
+              </div>
+            {{else}}
+              <button class="ok" data-action="open-auth">Login</button>
+            {{/if}}
+          </div>
+        {{/if}}
+
+        {{!-- MANIFEST --}}
+        {{#if (eq node "manifest")}}
+          <div class="mono">
+            <div><span class="hl">CONTAINER MANIFEST</span></div>
+            <div class="muted">Einträge geladen: {{containers.length}}</div>
+
+            <div class="grid4">
+              {{#each containers}}
+                <button data-container-id="{{id}}" class="{{#if isSpecial}}ok{{/if}}">
+                  {{id}} — {{label}}
+                </button>
+              {{/each}}
+            </div>
+
+            {{#if selectedContainer}}
+              <div class="divider"></div>
+              <div class="card">
+                <div><b>{{selectedContainer.id}}</b> <span class="muted">/ {{selectedContainer.label}}</span></div>
+                <div class="sp"></div>
+                <div><span class="muted">Owner:</span> {{selectedContainer.owner}}</div>
+                <div><span class="muted">Inhalt:</span> {{selectedContainer.contents}}</div>
+                <div><span class="muted">Ziel:</span> {{selectedContainer.dest}}</div>
+
+                <div class="divider"></div>
+
+                <div class="row">
+                  <button class="ok" data-action="reroute">Container umleiten</button>
+                  <button data-action="open-container">Container öffnen</button>
+                </div>
+              </div>
+            {{/if}}
+          </div>
+        {{/if}}
+
+        {{!-- CAMS --}}
+        {{#if (eq node "cams")}}
+          <div class="mono">
+            <div><span class="hl">DOCK-KAMERAS</span></div>
+            <div class="muted">Feeds verfügbar: {{cams.length}}</div>
+
+            <div class="grid4">
+              {{#each cams}}
+                <button data-cam-id="{{id}}" class="{{#if isOffline}}danger hot{{/if}}">
+                  {{label}}
+                </button>
+              {{/each}}
+            </div>
+
+            {{#if selectedCam}}
+              <div class="divider"></div>
+              <div class="card">
+                <div><b>{{selectedCam.id}}</b> <span class="muted">/ Feed</span></div>
+                <div class="sp"></div>
+
+                {{#if selectedCam.isOffline}}
+                  <div class="warn">Signal flackert…</div>
+                  <div class="bad">FEED OFFLINE</div>
+                {{else}}
+                  <div>{{camSceneText}}</div>
+                {{/if}}
+              </div>
+            {{/if}}
+          </div>
+        {{/if}}
+
+        {{!-- LOGS --}}
+        {{#if (eq node "logs")}}
+          <div class="mono">
+            <div><span class="hl">AUDIT-LOGS</span></div>
+            <div class="muted">Letzte Einträge</div>
+            <div class="sp"></div>
+
+            <div class="card">
+              <div class="pre">{{auditBaseText}}</div>
+
+              {{#if (eq access "OPERATOR")}}
+                <div class="sp"></div>
+                <div class="pre">{{auditOpText}}</div>
+                <div class="sp"></div>
+                <div class="pre team2">{{auditTeam2Text}}</div>
+              {{/if}}
+            </div>
+          </div>
+        {{/if}}
+
+      </div>
+    </section>
+
+    <aside class="dock47b-side">
+      <h3>SESSION LOG</h3>
+
+      <div class="dock47b-log">
+        {{#each sessionLog}}
+          <div class="logline {{cls}}">[{{t}}] {{text}}</div>
+        {{/each}}
+      </div>
+
+      <div class="dock47b-actions">
+        <button class="ok" data-action="open-auth">Login</button>
+      </div>
+    </aside>
+  </main>
+
+  <div class="dock47b-footer">
+    <div>DOCK-47B • Subnet-Knoten: 04 • Paketverlust: 0.2%</div>
+    <div>Build: RMPF-47B.19</div>
+  </div>
+</div>
