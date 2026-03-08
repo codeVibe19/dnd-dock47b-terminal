@@ -27,7 +27,12 @@ function loadState() {
 
 async function saveAndBroadcast(state) {
   const raw = { ...state, offlineCams: [...state.offlineCams] };
-  await game.settings.set(MODULE_ID, SETTING_KEY, raw);
+  if (game.user.isGM) {
+    await game.settings.set(MODULE_ID, SETTING_KEY, raw);
+  } else {
+    // Spieler haben keine Write-Rechte auf World-Settings → GM per Socket bitten
+    game.socket.emit(SOCKET_EVENT, { type: "saveRequest", state: raw });
+  }
   game.socket.emit(SOCKET_EVENT, { type: "stateUpdate", state: raw });
 }
 
@@ -409,7 +414,6 @@ function openDockTerminal() {
 }
 
 Hooks.once("ready", () => {
-  // Setting registrieren (world-scope = alle Clients teilen denselben Wert)
   game.settings.register(MODULE_ID, SETTING_KEY, {
     name: "Terminal State",
     scope: "world",
@@ -418,11 +422,28 @@ Hooks.once("ready", () => {
     default: defaultStateRaw()
   });
 
-  // Socket-Listener: wenn ein anderer Client den State ändert, hier neu rendern
+  // GM: Default-Wert initialisieren falls noch nicht gesetzt
+  if (game.user.isGM) {
+    try {
+      const existing = game.settings.get(MODULE_ID, SETTING_KEY);
+      if (!existing || Object.keys(existing).length === 0) {
+        game.settings.set(MODULE_ID, SETTING_KEY, defaultStateRaw());
+      }
+    } catch {
+      game.settings.set(MODULE_ID, SETTING_KEY, defaultStateRaw());
+    }
+  }
+
+  // Socket-Listener
   game.socket.on(SOCKET_EVENT, (data) => {
+    // Spieler-State-Update an alle rendern
     if (data?.type === "stateUpdate" && _dockApp?.rendered) {
       _dockApp.state = { ...data.state, offlineCams: new Set(data.state.offlineCams ?? []) };
       _dockApp.render();
+    }
+    // GM speichert State-Request von Spielern
+    if (data?.type === "saveRequest" && game.user.isGM) {
+      game.settings.set(MODULE_ID, SETTING_KEY, data.state).catch(console.error);
     }
   });
 
